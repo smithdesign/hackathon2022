@@ -21,7 +21,7 @@ function runMiddleware(req, res, fn) {
             if (result instanceof Error) {
                 return reject(result)
             }
-    
+
             return resolve(result)
         })
     })
@@ -30,7 +30,7 @@ function runMiddleware(req, res, fn) {
 const createProductString = (products) => {
     let query = 'Compare between ';
     products.forEach((product, i) => {
-        if(i === 0) {
+        if (i === 0) {
             query += `${product.brand} ${product.name}`;
         } else {
             query += ` and ${product.brand} ${product.name}`;
@@ -65,9 +65,9 @@ export default async function handler(request, response) {
     await runMiddleware(request, response, cors);
 
     if (request.method !== 'POST') {
-      return response.status(StatusCodes.BAD_REQUEST).send('');
+        return response.status(StatusCodes.BAD_REQUEST).send('');
     }
-    
+
     const products = request?.body?.products ?? null;
 
     if (!products) {
@@ -79,10 +79,9 @@ export default async function handler(request, response) {
     }
 
     const productPrompt = createProductString(products);
-    console.log(productPrompt);
-    
+
     try {
-        const response = await openai.createCompletion({
+        const openApiResponse = await openai.createCompletion({
             model: "text-davinci-003",
             prompt: productPrompt,
             temperature: 0,
@@ -91,13 +90,10 @@ export default async function handler(request, response) {
             frequency_penalty: 0.0,
             presence_penalty: 0.0,
         });
-        console.log('success')
-        console.log(response.data.choices[0].text);
 
-        const jsonData = await response.json(response.data.choices[0].text);
-        return new Response.json(jsonData);
+        response.status(200).json({ data: openApiResponse.data.choices[0].text });
     } catch (error) {
-        console.log('error')
-        return error;
+        console.error('Fucked up', error);
+        response.status(400).json({ error: "Fucked up" });
     }
-  };
+};
