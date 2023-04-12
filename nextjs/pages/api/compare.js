@@ -1,11 +1,31 @@
 import { StatusCodes } from "http-status-codes";
 import { Configuration, OpenAIApi } from "openai";
+import Cors from 'cors';
 
 const configuration = new Configuration({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Initializing the cors middleware
+// You can read more about the available options here: https://github.com/expressjs/cors#configuration-options
+const cors = Cors({
+    origin: '*',
+    methods: ['POST', 'GET', 'HEAD'],
+})
+
 const openai = new OpenAIApi(configuration);
+
+function runMiddleware(req, res, fn) {
+    return new Promise((resolve, reject) => {
+        fn(req, res, (result) => {
+            if (result instanceof Error) {
+                return reject(result)
+            }
+    
+            return resolve(result)
+        })
+    })
+}
 
 const createProductString = (products) => {
     let query = 'Compare between ';
@@ -38,7 +58,9 @@ async function runQuery(productPrompt) {
     }
 }
 
-export default async (request, response) => {
+export default async function handler(request, response) {
+    await runMiddleware(req, res, cors);
+
     if (request.method !== 'POST') {
       return response.status(StatusCodes.BAD_REQUEST).send('');
     }
