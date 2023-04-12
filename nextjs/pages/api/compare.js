@@ -2,16 +2,16 @@ import { StatusCodes } from "http-status-codes";
 import { Configuration, OpenAIApi } from "openai";
 import Cors from 'cors';
 
-const configuration = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-
 // Initializing the cors middleware
 // You can read more about the available options here: https://github.com/expressjs/cors#configuration-options
 const cors = Cors({
     origin: '*',
     methods: ['POST', 'GET', 'HEAD'],
 })
+
+const configuration = new Configuration({
+    apiKey: process.env.OPENAI_API_KEY,
+});
 
 const openai = new OpenAIApi(configuration);
 
@@ -52,14 +52,17 @@ async function runQuery(productPrompt) {
             presence_penalty: 0.0,
         });
 
-        return response.json(completion.data.choices[0].text);
+        console.log(response);
+
+        return response.json(completion.data);
     } catch (error) {
-        return response.json(error);
+        console.log(error)
+        return error;
     }
 }
 
 export default async function handler(request, response) {
-    await runMiddleware(req, res, cors);
+    await runMiddleware(request, response, cors);
 
     if (request.method !== 'POST') {
       return response.status(StatusCodes.BAD_REQUEST).send('');
@@ -76,6 +79,25 @@ export default async function handler(request, response) {
     }
 
     const productPrompt = createProductString(products);
+    console.log(productPrompt);
+    
+    try {
+        const response = await openai.createCompletion({
+            model: "text-davinci-003",
+            prompt: productPrompt,
+            temperature: 0,
+            max_tokens: 1000,
+            top_p: 1.0,
+            frequency_penalty: 0.0,
+            presence_penalty: 0.0,
+        });
+        console.log('success')
+        console.log(response.data.choices[0].text);
 
-    runQuery(productPrompt);
+        const jsonData = await response.json(response.data.choices[0].text);
+        return new Response.json(jsonData);
+    } catch (error) {
+        console.log('error')
+        return error;
+    }
   };
