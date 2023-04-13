@@ -1,31 +1,9 @@
 import { StatusCodes } from "http-status-codes";
-import { Configuration, OpenAIApi } from "openai";
-import Cors from 'cors';
+import { OpenAIApi } from "openai";
+import { cors, openAiConfig, runMiddleware } from "@/src/util";
 
-// Initializing the cors middleware
-// You can read more about the available options here: https://github.com/expressjs/cors#configuration-options
-const cors = Cors({
-    origin: '*',
-    methods: ['POST', 'GET', 'HEAD'],
-})
 
-const configuration = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-
-const openai = new OpenAIApi(configuration);
-
-function runMiddleware(req, res, fn) {
-    return new Promise((resolve, reject) => {
-        fn(req, res, (result) => {
-            if (result instanceof Error) {
-                return reject(result)
-            }
-
-            return resolve(result)
-        })
-    })
-}
+const openai = new OpenAIApi(openAiConfig);
 
 export default async function handler(request, response) {
     await runMiddleware(request, response, cors);
@@ -53,6 +31,6 @@ export default async function handler(request, response) {
 
         response.status(200).json({ data: openApiResponse.data.choices[0].text });
     } catch (error) {
-        response.status(400).json({ error: "Fucked up" });
+        response.status(400).json({ error: "There was a undexpected problem with the request" });
     }
 };
